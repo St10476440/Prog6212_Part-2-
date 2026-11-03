@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using RaceDayModel.Models;
 using System;
@@ -34,6 +34,7 @@ namespace RaceDayData.Data
             modelBuilder.Entity<Categories>(C =>
             {
                 C.HasKey(C => C.CategoryID);
+                C.Property(c => c.EntryFee).HasPrecision(18, 2);
 
                 C.HasOne<Events>()
                  .WithMany()
@@ -45,7 +46,8 @@ namespace RaceDayData.Data
             {
                 R.HasKey(R => R.ResultsID);
 
-                R.HasOne<Users>()
+                // A result belongs to an enrolment, not directly to a user.
+                R.HasOne<Enrolments>()
                  .WithMany()
                  .HasForeignKey(R => R.EnrolmentID)
                  .OnDelete(DeleteBehavior.Restrict);
@@ -54,6 +56,7 @@ namespace RaceDayData.Data
             modelBuilder.Entity<Events>(E =>
             {
                 E.HasKey(E => E.EventID);
+                E.Property(e => e.DistanceKm).HasPrecision(10, 3);
 
                 E.HasOne<Venue>()
                  .WithMany()
