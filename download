@@ -1,0 +1,15 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+# Build output
+**/bin/
+**/obj/
+# Tests
+TestResults/
+coverage/
+# Local secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
