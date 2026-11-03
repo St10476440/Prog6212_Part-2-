@@ -1,14 +1,13 @@
-# Visual Studio
+# Visual Studio local files
 .vs/
 *.user
 *.suo
-# Build output
+# Generated build and test output
 **/bin/
 **/obj/
-# Tests
 TestResults/
 coverage/
-# Local secrets
+# Local configuration and secrets
 .env
 .env.*
 !.env.example
