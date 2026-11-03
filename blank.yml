@@ -1,0 +1,43 @@
+name: RaceDay Build
+
+on:
+  push:
+    branches: [main, part-3]
+  pull_request:
+    branches: [main, part-3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Install .NET 8 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Check required source files
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in POE_Part2.sln POE_Part2.csproj Program.cs RaceDayController.cs RaceDayModel.cs RaceDayData.cs; do
+            if [ ! -f "$file" ]; then
+              echo "::error::Missing required file: $file"
+              exit 1
+            fi
+          done
+
+      - name: Restore NuGet packages
+        run: dotnet restore POE_Part2.sln
+
+      - name: Build solution
+        run: dotnet build POE_Part2.sln --configuration Release --no-restore
