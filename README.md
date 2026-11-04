@@ -72,3 +72,19 @@ dotnet user-secrets set "Jwt:Key" "replace-this-with-a-unique-random-secret-of-a
 For deployment, set the environment variable `Jwt__Key` using your hosting provider's secret manager. Do not commit the signing secret to appsettings.json or Git.
 
 The API uses issuer `RaceDay.Api` and audience `RaceDay.Client` by default. Keep these values aligned with the MVC/API environment.
+
+
+## Azure Blob Storage for event banners
+
+The MVC application can upload JPG, PNG and WebP event banners to the Azure Blob Storage container configured as `event-banners`. Uploads are limited to 5 MB and use generated blob names rather than the original file name.
+
+Set the storage connection string as an environment variable or in .NET user-secrets for the MVC project:
+
+```bash
+dotnet user-secrets init --project RaceDay.Web/RaceDay.Web.csproj
+dotnet user-secrets set "Azure:StorageConnectionString" "<your Azure Storage connection string>" --project RaceDay.Web/RaceDay.Web.csproj
+```
+
+For deployment, configure `Azure__StorageConnectionString` in the hosting platform's secret settings. Do not commit the connection string.
+
+The banner container is created with blob-level public read access because event banners are intended to be visible to participants. Ensure public blob access is enabled for the storage account. If your account policy prohibits anonymous blob access, change the service to generate time-limited read SAS URLs instead.
