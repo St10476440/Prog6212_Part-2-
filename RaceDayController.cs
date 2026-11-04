@@ -148,17 +148,58 @@ public class RaceDayController : ControllerBase
         if (date.HasValue)
             query = query.Where(e => e.EventDate == date.Value);
 
-        return Ok(query.ToList());
+        return Ok(query.OrderBy(e => e.EventDate).ToList());
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpGet("api/events/mine")]
+    public IActionResult GetMyEvents()
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(organiserId))
+            return Unauthorized();
+
+        var events = _context.Events
+            .Where(e => e.OrganiserID == organiserId)
+            .OrderBy(e => e.EventDate)
+            .ToList();
+
+        return Ok(events);
     }
 
     [Authorize(Roles = "Organiser")]
     [HttpPost("api/events")]
-    public IActionResult CreateEvent([FromBody] Events newEvent)
+    public IActionResult CreateEvent([FromBody] CreateEventRequest request)
     {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(organiserId))
+            return Unauthorized();
+
+        var venue = new Venue
+        {
+            VenueName = request.VenueName.Trim(),
+            City = request.City.Trim(),
+            Province = request.Province.Trim()
+        };
+
+        var newEvent = new Events
+        {
+            OrganiserID = organiserId,
+            VenueID = venue.VenueID,
+            EventName = request.EventName.Trim(),
+            EventType = request.EventType.Trim(),
+            EventDate = request.EventDate,
+            Description = request.Description.Trim(),
+            Location = request.Location.Trim(),
+            DistanceKm = request.DistanceKm,
+            BannerImageUrl = request.BannerImageUrl
+        };
+
+        _context.Venue.Add(venue);
         _context.Events.Add(newEvent);
         _context.SaveChanges();
 
-        return StatusCode(201, newEvent);
+        return CreatedAtAction(nameof(GetEventById), new { id = newEvent.EventID }, newEvent);
     }
 
     [HttpGet("api/events/{id}")]
@@ -174,19 +215,98 @@ public class RaceDayController : ControllerBase
     }
 
     [Authorize(Roles = "Organiser")]
-    [HttpPost("api/events/{id}/categories")]
-    public IActionResult AddCategory(string id, [FromBody] Categories newCategory)
+    [HttpPut("api/events/{id}")]
+    public IActionResult UpdateEvent(string id, [FromBody] CreateEventRequest request)
     {
-        newCategory.EventID = id;
-        _context.Categories.Add(newCategory);
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        var venue = _context.Venue.Find(raceEvent.VenueID);
+        if (venue == null)
+            return Conflict("The event venue record could not be found.");
+
+        venue.VenueName = request.VenueName.Trim();
+        venue.City = request.City.Trim();
+        venue.Province = request.Province.Trim();
+
+        raceEvent.EventName = request.EventName.Trim();
+        raceEvent.EventType = request.EventType.Trim();
+        raceEvent.EventDate = request.EventDate;
+        raceEvent.Description = request.Description.Trim();
+        raceEvent.Location = request.Location.Trim();
+        raceEvent.DistanceKm = request.DistanceKm;
+        raceEvent.BannerImageUrl = request.BannerImageUrl;
+
+        _context.SaveChanges();
+        return Ok(raceEvent);
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpDelete("api/events/{id}")]
+    public IActionResult DeleteEvent(string id)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        var categories = _context.Categories.Where(c => c.EventID == id).ToList();
+        var categoryIds = categories.Select(c => c.CategoryID).ToList();
+
+        if (_context.Enrolments.Any(e => categoryIds.Contains(e.CategoryID)))
+            return Conflict("This event has participant entries and cannot be deleted.");
+
+        _context.Categories.RemoveRange(categories);
+        _context.Events.Remove(raceEvent);
         _context.SaveChanges();
 
-        return StatusCode(StatusCodes.Status201Created, newCategory);
+        return NoContent();
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpPost("api/events/{id}/categories")]
+    public IActionResult AddCategory(string id, [FromBody] CreateCategoryRequest request)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        if (request.MinimumAge.HasValue && request.MaximumAge.HasValue
+            && request.MinimumAge > request.MaximumAge)
+            return BadRequest("Minimum age cannot exceed maximum age.");
+
+        var category = new Categories
+        {
+            EventID = id,
+            CategoryName = request.CategoryName.Trim(),
+            Distance = request.Distance.Trim(),
+            Country = request.Country.Trim(),
+            MinimumAge = request.MinimumAge,
+            MaximumAge = request.MaximumAge,
+            EntryFee = request.EntryFee
+        };
+
+        _context.Categories.Add(category);
+        _context.SaveChanges();
+
+        return StatusCode(StatusCodes.Status201Created, category);
     }
 
     [HttpGet("api/events/{id}/categories")]
     public IActionResult GetCategoriesForEvent(string id)
     {
+        if (!_context.Events.Any(e => e.EventID == id))
+            return NotFound("Event not found.");
+
         var categories = _context.Categories.Where(c => c.EventID == id).ToList();
         return Ok(categories);
     }
