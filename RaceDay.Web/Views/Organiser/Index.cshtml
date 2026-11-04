@@ -28,6 +28,7 @@ else
             <div class="event-actions">
                 <a class="button button-small button-outline-light" asp-action="Edit" asp-route-id="@item.EventID">Edit</a>
                 <a class="text-link" asp-action="ManageCategories" asp-route-id="@item.EventID">Categories</a>
+                <a class="text-link" asp-action="ManageEntries" asp-route-id="@item.EventID">Entries & results</a>
                 <form asp-action="Delete" asp-route-id="@item.EventID" method="post">
                     <button class="button button-small button-danger" type="submit">Delete</button>
                 </form>
