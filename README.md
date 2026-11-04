@@ -88,3 +88,26 @@ dotnet user-secrets set "Azure:StorageConnectionString" "<your Azure Storage con
 For deployment, configure `Azure__StorageConnectionString` in the hosting platform's secret settings. Do not commit the connection string.
 
 The banner container is created with blob-level public read access because event banners are intended to be visible to participants. Ensure public blob access is enabled for the storage account. If your account policy prohibits anonymous blob access, change the service to generate time-limited read SAS URLs instead.
+
+
+## Implemented Part 3 workflows
+
+- Account registration and sign-in through the Part 2 API.
+- JWT bearer validation in the API and session-backed authenticated MVC API calls.
+- Organiser event creation, editing, deletion and event-specific category management.
+- Participant event discovery, event details and category enrolment.
+- Organiser participant-entry review and event-scoped result recording.
+- Participant entry list and published results history.
+- Profile contact-detail updates.
+- Azure Blob Storage event banner uploads (JPG, PNG and WebP; 5 MB maximum).
+- Docker image build for the MVC frontend.
+
+## Final local checks
+
+1. Set the API JWT secret using the instructions above.
+2. Configure SQL Server and run the API.
+3. Set the MVC API URL in `RaceDay.Web/appsettings.json`.
+4. Set `Azure__StorageConnectionString` if you want to upload event banners.
+5. Run the MVC project and test registration, sign-in, organiser and participant workflows using separate accounts.
+
+The GitHub Actions workflow restores and builds the solution and builds the MVC Docker image. A successful build is not a substitute for running the application against a configured SQL Server and Azure Storage account; those environment-dependent checks must still be completed locally.
