@@ -1,0 +1,24 @@
+@model RaceDay.Web.Models.EventFormViewModel
+@{ ViewData["Title"] = "Create event"; }
+<section class="form-page">
+    <a class="text-link" asp-action="Index">← Back to organiser dashboard</a>
+    <p class="eyebrow">NEW RACE EVENT</p>
+    <h1>Create an event</h1>
+    <p class="muted">Add the essential details participants need to discover your race.</p>
+    <form asp-action="Create" method="post" class="form-card form-card-wide">
+        <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+        <div class="form-grid">
+            <div class="field"><label asp-for="EventName"></label><input asp-for="EventName" /><span asp-validation-for="EventName" class="validation"></span></div>
+            <div class="field"><label asp-for="EventType"></label><select asp-for="EventType"><option>Road Race</option><option>Trail Run</option><option>Marathon</option><option>Fun Run</option><option>Cycle Race</option><option>Other</option></select><span asp-validation-for="EventType" class="validation"></span></div>
+            <div class="field"><label asp-for="EventDate"></label><input asp-for="EventDate" type="date" /><span asp-validation-for="EventDate" class="validation"></span></div>
+            <div class="field"><label asp-for="DistanceKm"></label><input asp-for="DistanceKm" type="number" min="0.1" max="500" step="0.1" /><span asp-validation-for="DistanceKm" class="validation"></span></div>
+            <div class="field"><label asp-for="VenueName"></label><input asp-for="VenueName" /><span asp-validation-for="VenueName" class="validation"></span></div>
+            <div class="field"><label asp-for="Location"></label><input asp-for="Location" /><span asp-validation-for="Location" class="validation"></span></div>
+            <div class="field"><label asp-for="City"></label><input asp-for="City" /><span asp-validation-for="City" class="validation"></span></div>
+            <div class="field"><label asp-for="Province"></label><input asp-for="Province" /><span asp-validation-for="Province" class="validation"></span></div>
+            <div class="field full"><label asp-for="BannerImageUrl"></label><input asp-for="BannerImageUrl" placeholder="https://example.com/event-banner.jpg" /><span asp-validation-for="BannerImageUrl" class="validation"></span></div>
+            <div class="field full"><label asp-for="Description"></label><textarea asp-for="Description" rows="4"></textarea><span asp-validation-for="Description" class="validation"></span></div>
+        </div>
+        <div class="form-actions"><button class="button" type="submit">Save event</button><a class="text-link" asp-action="Index">Cancel</a></div>
+    </form>
+</section>
