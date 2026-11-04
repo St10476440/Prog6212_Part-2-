@@ -333,6 +333,36 @@ public class RaceDayController : ControllerBase
         return NoContent();
     }
 
+    [Authorize(Roles = "Organiser")]
+    [HttpGet("api/events/{id}/entries")]
+    public IActionResult GetEventEntries(string id)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == id && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var entries = from enrolment in _context.Enrolments
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join participant in _context.Users
+                          on enrolment.ParticipantID equals participant.UserID
+                      where category.EventID == id
+                      orderby enrolment.RegistrationDate
+                      select new
+                      {
+                          enrolment,
+                          category,
+                          participant = new
+                          {
+                              participant.UserID,
+                              participant.FullName,
+                              participant.Email
+                          }
+                      };
+
+        return Ok(entries.ToList());
+    }
+
     // ==========================================
     // 4. ENROLMENT ENDPOINTS
     // ==========================================
@@ -396,11 +426,32 @@ public class RaceDayController : ControllerBase
     // ==========================================
 
     [Authorize(Roles = "Organiser")]
-    [HttpPost("api/results")]
-    public IActionResult RecordResult([FromBody] RaceDayModel.Models.Results result)
+    [HttpPost("api/events/{eventId}/results")]
+    public IActionResult RecordResult(string eventId, [FromBody] RecordResultRequest request)
     {
-        if (result == null)
-            return BadRequest("Result payload cannot be null.");
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == eventId && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var enrolment = _context.Enrolments.Find(request.EnrolmentID);
+        if (enrolment == null)
+            return NotFound("Participant entry not found.");
+
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == enrolment.CategoryID && c.EventID == eventId);
+        if (category == null)
+            return BadRequest("The participant entry does not belong to this event.");
+
+        if (_context.Results.Any(r => r.EnrolmentID == enrolment.EnrolmentID))
+            return Conflict("A result has already been recorded for this entry.");
+
+        var result = new RaceDayModel.Models.Results
+        {
+            EnrolmentID = enrolment.EnrolmentID,
+            FinishTime = request.FinishTime,
+            Position = request.Position.Trim(),
+            Status = request.Status.Trim()
+        };
 
         _context.Results.Add(result);
         _context.SaveChanges();
