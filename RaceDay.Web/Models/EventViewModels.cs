@@ -109,6 +109,8 @@ public sealed class ParticipantEventDetailsViewModel
 public sealed class ParticipantResultViewModel
 {
     public string ResultsID { get; set; } = string.Empty;
+    public string EventName { get; set; } = string.Empty;
+    public string CategoryName { get; set; } = string.Empty;
     public string EnrolmentID { get; set; } = string.Empty;
     public TimeOnly FinishTime { get; set; }
     public string Position { get; set; } = string.Empty;
