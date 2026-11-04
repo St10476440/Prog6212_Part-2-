@@ -1,0 +1,39 @@
+@model List<RaceDay.Web.Models.EventListItemViewModel>
+@{ ViewData["Title"] = "Organiser dashboard"; }
+<section class="dashboard-heading">
+    <p class="eyebrow">ORGANISER SPACE</p>
+    <h1>Welcome, @Context.Session.GetString("FullName")</h1>
+    <p class="muted">Create and manage your race events from one place.</p>
+    <a class="button" asp-action="Create">+ Create an event</a>
+</section>
+@if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+@if (ViewBag.Error is string loadError) { <div class="alert error" role="alert">@loadError</div> }
+<section class="section-heading">
+    <div><p class="eyebrow">YOUR RACE CALENDAR</p><h2>My events</h2></div>
+    <span class="count-label">@Model.Count event(s)</span>
+</section>
+@if (Model.Count == 0)
+{
+    <div class="empty-state"><h3>Your next event starts here.</h3><p>You have not created any events yet. Set up your first race to get started.</p><a class="button" asp-action="Create">Create your first event</a></div>
+}
+else
+{
+    <div class="event-list">
+    @foreach (var item in Model)
+    {
+        <article class="event-card">
+            <div class="event-date"><strong>@item.EventDate.ToString("dd")</strong><span>@item.EventDate.ToString("MMM yyyy")</span></div>
+            <div class="event-info"><p class="eyebrow">@item.EventType · @item.DistanceKm.ToString("0.##") km</p><h3>@item.EventName</h3><p>@item.Location</p></div>
+            <div class="event-actions">
+                <a class="button button-small button-outline-light" asp-action="Edit" asp-route-id="@item.EventID">Edit</a>
+                <a class="text-link" asp-action="ManageCategories" asp-route-id="@item.EventID">Categories</a>
+                <a class="text-link" asp-action="ManageEntries" asp-route-id="@item.EventID">Entries & results</a>
+                <form asp-action="Delete" asp-route-id="@item.EventID" method="post">
+                    <button class="button button-small button-danger" type="submit">Delete</button>
+                </form>
+            </div>
+        </article>
+    }
+    </div>
+}

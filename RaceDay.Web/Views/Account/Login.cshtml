@@ -1,0 +1,20 @@
+@model RaceDay.Web.Models.LoginViewModel
+@{ ViewData["Title"] = "Sign in"; }
+<section class="auth-panel">
+    <p class="eyebrow">WELCOME BACK</p>
+    <h1>Sign in to RaceDay</h1>
+    <p class="muted">Access your events, entries and race results.</p>
+    @if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+    <form asp-action="Login" method="post" class="form-card">
+        <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+        <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+        <label asp-for="Email"></label>
+        <input asp-for="Email" autocomplete="username" />
+        <span asp-validation-for="Email" class="validation"></span>
+        <label asp-for="Password"></label>
+        <input asp-for="Password" autocomplete="current-password" />
+        <span asp-validation-for="Password" class="validation"></span>
+        <button class="button" type="submit">Sign in</button>
+    </form>
+    <p class="form-foot">New to RaceDay? <a asp-action="Register">Create an account</a></p>
+</section>

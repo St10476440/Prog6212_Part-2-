@@ -1,0 +1,24 @@
+@model RaceDay.Web.Models.ProfileViewModel
+@{ ViewData["Title"] = "My profile"; }
+<section class="auth-panel">
+    <p class="eyebrow">YOUR RACEDAY ACCOUNT</p>
+    <h1>My profile</h1>
+    <p class="muted">Review your account details and keep your contact information up to date.</p>
+    @if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+    @if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+    <div class="profile-readonly">
+        <div><span>Full name</span><strong>@Model.FullName</strong></div>
+        <div><span>Email address</span><strong>@Model.Email</strong></div>
+        <div><span>Account type</span><strong>@Model.Role</strong></div>
+    </div>
+    <form asp-action="Profile" method="post" class="form-card">
+        <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
+        <label asp-for="PhoneNumber"></label>
+        <input asp-for="PhoneNumber" autocomplete="tel" />
+        <span asp-validation-for="PhoneNumber" class="validation"></span>
+        <label asp-for="EmergencyContact"></label>
+        <input asp-for="EmergencyContact" />
+        <span asp-validation-for="EmergencyContact" class="validation"></span>
+        <button class="button" type="submit">Save changes</button>
+    </form>
+</section>

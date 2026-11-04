@@ -3,19 +3,43 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#10231f" />
     <title>@ViewData["Title"] | RaceDay</title>
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <a class="skip-link" href="#main">Skip to content</a>
-    <header>
-        <nav class="container" aria-label="Main navigation">
-            <a class="brand" asp-controller="Home" asp-action="Index">Race<span>Day</span></a>
-            <a asp-controller="Home" asp-action="Index">Home</a>
+    <header class="site-header">
+        <nav class="container nav-bar" aria-label="Main navigation">
+            <a class="brand" asp-controller="Home" asp-action="Index">Race<span>Day</span><small>RUN YOUR MOMENT</small></a>
+            <div class="nav-links">
+                <a asp-controller="Home" asp-action="Index">Home</a>
+                @if (Context.Session.GetString("UserRole") == "Organiser")
+                {
+                    <a asp-controller="Organiser" asp-action="Index">Dashboard</a>
+                }
+                else if (Context.Session.GetString("UserRole") == "Participant")
+                {
+                    <a asp-controller="Participant" asp-action="Index">Dashboard</a>
+                }
+                @if (Context.Session.GetString("AuthToken") is not null)
+                {
+                    <span class="nav-user">@Context.Session.GetString("FullName")</span>
+                    <a asp-controller="Account" asp-action="Profile">Profile</a>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
+                        <button class="button button-small button-outline" type="submit">Sign out</button>
+                    </form>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Login">Sign in</a>
+                    <a class="button button-small" asp-controller="Account" asp-action="Register">Get started</a>
+                }
+            </div>
         </nav>
     </header>
-    <main id="main" class="container">@RenderBody()</main>
-    <footer class="container">RaceDay &copy; @DateTime.UtcNow.Year · Every finish starts here.</footer>
+    <main id="main" class="container page-content">@RenderBody()</main>
+    <footer class="site-footer"><div class="container">RaceDay &copy; @DateTime.UtcNow.Year <span>·</span> Every finish starts here.</div></footer>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

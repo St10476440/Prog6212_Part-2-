@@ -1,0 +1,49 @@
+@model RaceDay.Web.Models.ParticipantDashboardViewModel
+@{ ViewData["Title"] = "Participant dashboard"; }
+<section class="dashboard-heading">
+    <p class="eyebrow">PARTICIPANT SPACE</p>
+    <h1>Welcome, @Context.Session.GetString("FullName")</h1>
+    <p class="muted">Find your next challenge and keep track of your race journey.</p>
+    <a class="text-link" asp-action="MyHistory">View my results history →</a>
+</section>
+@if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+@if (Model.ErrorMessage is string message) { <div class="alert error" role="alert">@message</div> }
+<section class="section-heading"><div><p class="eyebrow">YOUR RACE CALENDAR</p><h2>Discover events</h2></div><span class="count-label">@Model.Events.Count event(s)</span></section>
+@if (Model.Events.Count == 0)
+{
+    <div class="empty-state"><h3>No events are listed yet.</h3><p>Check back soon for upcoming races.</p></div>
+}
+else
+{
+    <div class="participant-event-grid">
+    @foreach (var item in Model.Events)
+    {
+        <article class="card participant-event">
+            <p class="eyebrow">@item.EventType · @item.DistanceKm.ToString("0.##") km</p>
+            <h3>@item.EventName</h3>
+            <p class="event-meta">@item.EventDate.ToString("dd MMM yyyy") · @item.Location</p>
+            <p>@item.Description</p>
+            <a class="text-link" asp-action="Details" asp-route-id="@item.EventID">View event and categories →</a>
+        </article>
+    }
+    </div>
+}
+<section class="section-heading"><div><p class="eyebrow">YOUR COMMITMENTS</p><h2>My entries</h2></div><span class="count-label">@Model.Entries.Count entry/entries</span></section>
+@if (Model.Entries.Count == 0)
+{
+    <p class="muted">You have not entered an event yet. Find a race above to get started.</p>
+}
+else
+{
+    <div class="entry-list">
+    @foreach (var entry in Model.Entries)
+    {
+        <article class="entry-row">
+            <div><strong>@entry.RaceEvent.EventName</strong><span>@entry.Category.CategoryName · @entry.Category.Distance</span></div>
+            <span class="status-pill pending">@entry.Enrolment.Status</span>
+            <a class="text-link" asp-action="Details" asp-route-id="@entry.RaceEvent.EventID">View event</a>
+        </article>
+    }
+    </div>
+}
