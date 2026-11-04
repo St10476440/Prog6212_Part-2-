@@ -1,0 +1,38 @@
+@model RaceDay.Web.Models.ParticipantEventDetailsViewModel
+@{ ViewData["Title"] = "Event details"; }
+<section class="form-page">
+    <a class="text-link" asp-action="Index">← Back to events</a>
+    <p class="eyebrow">@Model.RaceEvent.EventType · @Model.RaceEvent.DistanceKm.ToString("0.##") km</p>
+    <h1>@Model.RaceEvent.EventName</h1>
+    <p class="muted">@Model.RaceEvent.EventDate.ToString("dddd, dd MMMM yyyy") · @Model.RaceEvent.Location</p>
+    @if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+    @if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+    <article class="card event-description">
+        <h2>About this event</h2>
+        <p>@Model.RaceEvent.Description</p>
+        @if (Model.Venue is not null) { <p class="muted">@Model.Venue.VenueName · @Model.Venue.City, @Model.Venue.Province</p> }
+    </article>
+    <section class="section-heading"><div><p class="eyebrow">CHOOSE YOUR RACE</p><h2>Available categories</h2></div></section>
+    @if (Model.Categories.Count == 0)
+    {
+        <div class="empty-state"><p>No categories have been added to this event yet.</p></div>
+    }
+    else
+    {
+        <div class="category-list">
+        @foreach (var category in Model.Categories)
+        {
+            <article class="category-row">
+                <div><h3>@category.CategoryName</h3><p>@category.Distance · @category.Country</p><span class="muted">Age: @(category.MinimumAge?.ToString() ?? "Any") – @(category.MaximumAge?.ToString() ?? "Any")</span></div>
+                <div class="category-entry"><strong>R @category.EntryFee.ToString("0.00")</strong>
+                    <form asp-action="Enrol" method="post">
+                        <input type="hidden" name="eventId" value="@Model.RaceEvent.EventID" />
+                        <input type="hidden" name="categoryId" value="@category.CategoryID" />
+                        <button class="button button-small" type="submit">Enter race</button>
+                    </form>
+                </div>
+            </article>
+        }
+        </div>
+    }
+</section>
