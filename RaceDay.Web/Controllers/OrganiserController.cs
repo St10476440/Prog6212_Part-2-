@@ -71,6 +71,12 @@ public sealed class OrganiserController(
             ModelState.AddModelError(nameof(model.BannerImage), ex.Message);
             return View(model);
         }
+        catch (Azure.RequestFailedException ex)
+        {
+            logger.LogError(ex, "Azure Blob Storage rejected the event banner upload.");
+            ModelState.AddModelError(nameof(model.BannerImage), "The banner could not be uploaded. Check the Azure Storage configuration and try again.");
+            return View(model);
+        }
         catch (HttpRequestException ex)
         {
             logger.LogError(ex, "Could not create event.");
@@ -145,6 +151,12 @@ public sealed class OrganiserController(
         catch (InvalidOperationException ex)
         {
             ModelState.AddModelError(nameof(model.BannerImage), ex.Message);
+            return View(model);
+        }
+        catch (Azure.RequestFailedException ex)
+        {
+            logger.LogError(ex, "Azure Blob Storage rejected the event banner update.");
+            ModelState.AddModelError(nameof(model.BannerImage), "The banner could not be uploaded. Check the Azure Storage configuration and try again.");
             return View(model);
         }
         catch (HttpRequestException ex)
