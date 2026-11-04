@@ -223,4 +223,63 @@ public sealed class OrganiserController(
 
         return RedirectToAction(nameof(ManageCategories), new { id });
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ManageEntries(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return BadRequest();
+
+        try
+        {
+            using var eventResponse = await _api.GetAsync($"api/events/{Uri.EscapeDataString(id)}");
+            using var entriesResponse = await _api.GetAsync($"api/events/{Uri.EscapeDataString(id)}/entries");
+            if (!eventResponse.IsSuccessStatusCode || !entriesResponse.IsSuccessStatusCode)
+                return NotFound();
+
+            var eventDetails = await eventResponse.Content.ReadFromJsonAsync<EventDetailsEnvelope>();
+            if (eventDetails?.RaceEvent is null) return NotFound();
+
+            var entries = await entriesResponse.Content.ReadFromJsonAsync<List<EventEntryViewModel>>()
+                ?? new List<EventEntryViewModel>();
+
+            return View(new EventEntriesPageViewModel
+            {
+                EventID = id,
+                EventName = eventDetails.RaceEvent.EventName,
+                Entries = entries
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not load event participant entries.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> RecordResult(string id, ResultFormViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Please provide a finish time, position and result status.";
+            return RedirectToAction(nameof(ManageEntries), new { id });
+        }
+
+        try
+        {
+            using var response = await _api.PostAsJsonAsync(
+                $"api/events/{Uri.EscapeDataString(id)}/results", model);
+            TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
+                ? "The participant result has been recorded."
+                : "The result could not be saved. Check that this entry does not already have a result.";
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not record participant result.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+        }
+
+        return RedirectToAction(nameof(ManageEntries), new { id });
+    }
 }
