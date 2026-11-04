@@ -1,0 +1,38 @@
+@model RaceDay.Web.Models.EventEntriesPageViewModel
+@{ ViewData["Title"] = "Event entries and results"; }
+<section class="form-page">
+    <a class="text-link" asp-action="Index">← Back to organiser dashboard</a>
+    <p class="eyebrow">RACE DAY MANAGEMENT</p>
+    <h1>@Model.EventName</h1>
+    <p class="muted">Review participant entries and record their race results.</p>
+    @if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+    @if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+    <section class="section-heading"><div><p class="eyebrow">REGISTERED RUNNERS</p><h2>Participant entries</h2></div><span class="count-label">@Model.Entries.Count entry/entries</span></section>
+    @if (Model.Entries.Count == 0)
+    {
+        <div class="empty-state"><h3>No entries yet.</h3><p>Participant registrations for this event will appear here.</p></div>
+    }
+    else
+    {
+        <div class="entry-list">
+        @foreach (var entry in Model.Entries)
+        {
+            <article class="result-entry-card">
+                <div class="entry-person">
+                    <strong>@entry.Participant.FullName</strong>
+                    <span>@entry.Participant.Email</span>
+                    <span>@entry.Category.CategoryName · @entry.Category.Distance</span>
+                    <span class="status-pill pending">@entry.Enrolment.Status</span>
+                </div>
+                <form asp-action="RecordResult" asp-route-id="@Model.EventID" method="post" class="result-form">
+                    <input type="hidden" name="EnrolmentID" value="@entry.Enrolment.EnrolmentID" />
+                    <div class="field"><label>Finish time</label><input name="FinishTime" type="time" step="1" required /></div>
+                    <div class="field"><label>Position</label><input name="Position" type="number" min="1" required /></div>
+                    <div class="field"><label>Status</label><select name="Status"><option>Finished</option><option>DNF</option><option>DNS</option></select></div>
+                    <button class="button button-small" type="submit">Save result</button>
+                </form>
+            </article>
+        }
+        </div>
+    }
+</section>
