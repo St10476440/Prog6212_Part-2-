@@ -1,14 +1,25 @@
 @{ ViewData["Title"] = "Home"; }
 <section class="hero" aria-labelledby="welcome-title">
-    <p class="eyebrow">YOUR NEXT STARTING LINE</p>
-    <h1 id="welcome-title">Make every<br />kilometre count.</h1>
-    <p>One place to discover race events, manage entries and celebrate your results.</p>
-    <a class="button" href="#experience">Explore RaceDay</a>
+    <div class="hero-copy">
+        <p class="eyebrow">FIND YOUR STARTING LINE</p>
+        <h1 id="welcome-title">Every race has<br /><em>a story.</em></h1>
+        <p class="hero-lead">Discover events, take your place on the start line and keep every finish in one place.</p>
+        <div class="hero-actions">
+            <a class="button" asp-controller="Account" asp-action="Register">Create your account</a>
+            <a class="text-link" asp-controller="Account" asp-action="Login">Already a member? Sign in →</a>
+        </div>
+    </div>
+    <div class="hero-stats" aria-label="RaceDay platform highlights">
+        <div><strong>01</strong><span>Discover events</span></div>
+        <div><strong>02</strong><span>Manage entries</span></div>
+        <div><strong>03</strong><span>Track results</span></div>
+    </div>
 </section>
-<section id="experience" aria-labelledby="experience-title">
-    <h2 id="experience-title">Built for both sides of race day</h2>
+<section class="intro-section">
+    <p class="eyebrow">ONE PLATFORM · TWO EXPERIENCES</p>
+    <h2>Made for everyone<br />who makes race day.</h2>
     <div class="grid">
-        <article class="card"><p class="eyebrow">PARTICIPANTS</p><h3>Find your next challenge</h3><p>Event browsing, entries and personal results will be available here as the platform is developed.</p></article>
-        <article class="card"><p class="eyebrow">ORGANISERS</p><h3>Bring your event to life</h3><p>Event management, participant lists and results publishing will be added in the next stages.</p></article>
+        <article class="card"><p class="eyebrow">FOR PARTICIPANTS</p><h3>Your next challenge awaits.</h3><p>Explore upcoming events, choose your category, manage your entries and follow your race history.</p><a class="text-link" asp-controller="Account" asp-action="Register">Join as a participant →</a></article>
+        <article class="card"><p class="eyebrow">FOR ORGANISERS</p><h3>Bring your event together.</h3><p>Build event listings, manage categories and participants, and publish race results.</p><a class="text-link" asp-controller="Account" asp-action="Register">Join as an organiser →</a></article>
     </div>
 </section>
