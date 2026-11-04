@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] | RaceDay</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header>
+        <nav class="container" aria-label="Main navigation">
+            <a class="brand" asp-controller="Home" asp-action="Index">Race<span>Day</span></a>
+            <a asp-controller="Home" asp-action="Index">Home</a>
+        </nav>
+    </header>
+    <main id="main" class="container">@RenderBody()</main>
+    <footer class="container">RaceDay &copy; @DateTime.UtcNow.Year · Every finish starts here.</footer>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

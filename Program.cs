@@ -1,31 +1,26 @@
-using Microsoft.EntityFrameworkCore;
-using RaceDayData.Data;
-
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews();
 
-// Add services to the container.
+// All future data operations go through the API, never a database connection.
+var apiBaseUrl = builder.Configuration["Api:BaseUrl"];
+if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiUri)
+    || (apiUri.Scheme != "http" && apiUri.Scheme != "https"))
+    throw new InvalidOperationException("Configure Api:BaseUrl as an HTTP(S) API URL.");
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<RaceDayDataContext>
-    (options => options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection.")));
+builder.Services.AddHttpClient("RaceDayApi", client =>
+{
+    client.BaseAddress = new Uri(apiUri.AbsoluteUri.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
 
 var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (!app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
 }
-
 app.UseHttpsRedirection();
-
-app.UseAuthorization();
-
-app.MapControllers();
-
+app.UseStaticFiles();
+app.UseRouting();
+app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
 app.Run();
