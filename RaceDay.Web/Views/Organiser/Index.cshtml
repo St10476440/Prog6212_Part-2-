@@ -1,0 +1,12 @@
+@{ ViewData["Title"] = "Organiser dashboard"; }
+<section class="dashboard-heading">
+    <p class="eyebrow">ORGANISER SPACE</p>
+    <h1>Welcome, @Context.Session.GetString("FullName")</h1>
+    <p class="muted">Plan events, manage entries and publish race-day results.</p>
+</section>
+<div class="grid">
+    <article class="card"><p class="eyebrow">OVERVIEW</p><h2>Event dashboard</h2><p>See your events, total enrolments and upcoming race dates.</p><span class="status-pill pending">API integration next</span></article>
+    <article class="card"><p class="eyebrow">EVENTS</p><h2>Manage events</h2><p>Create, update and remove events, including event banner images.</p><span class="status-pill pending">API integration next</span></article>
+    <article class="card"><p class="eyebrow">CATEGORIES</p><h2>Event categories</h2><p>Set age groups and distance categories for each event.</p><span class="status-pill pending">API integration next</span></article>
+    <article class="card"><p class="eyebrow">RACE DAY</p><h2>Entries & results</h2><p>Review participant entries and publish finish times and positions.</p><span class="status-pill pending">API integration next</span></article>
+</div>
