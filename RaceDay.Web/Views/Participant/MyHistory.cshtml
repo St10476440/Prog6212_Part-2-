@@ -16,7 +16,7 @@
         @foreach (var result in Model)
         {
             <article class="entry-row">
-                <div><strong>Position @result.Position</strong><span>Finish time: @result.FinishTime.ToString("HH:mm:ss")</span></div>
+                <div><strong>@result.EventName</strong><span>@result.CategoryName · Position @result.Position</span><span>Finish time: @result.FinishTime.ToString("HH:mm:ss")</span></div>
                 <span class="status-pill pending">@result.Status</span>
             </article>
         }
