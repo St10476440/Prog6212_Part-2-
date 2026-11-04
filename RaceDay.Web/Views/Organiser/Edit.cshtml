@@ -5,7 +5,7 @@
     <p class="eyebrow">UPDATE YOUR RACE</p>
     <h1>Edit event</h1>
     <p class="muted">Update the information participants see about this event.</p>
-    <form asp-action="Edit" asp-route-id="@ViewBag.EventId" method="post" class="form-card form-card-wide">
+    <form asp-action="Edit" asp-route-id="@ViewBag.EventId" method="post" enctype="multipart/form-data" class="form-card form-card-wide">
         <div asp-validation-summary="ModelOnly" class="validation" role="alert"></div>
         <div class="form-grid">
             <div class="field"><label asp-for="EventName"></label><input asp-for="EventName" /><span asp-validation-for="EventName" class="validation"></span></div>
@@ -16,6 +16,7 @@
             <div class="field"><label asp-for="Location"></label><input asp-for="Location" /><span asp-validation-for="Location" class="validation"></span></div>
             <div class="field"><label asp-for="City"></label><input asp-for="City" /><span asp-validation-for="City" class="validation"></span></div>
             <div class="field"><label asp-for="Province"></label><input asp-for="Province" /><span asp-validation-for="Province" class="validation"></span></div>
+            <div class="field full"><label asp-for="BannerImage"></label><input asp-for="BannerImage" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" /><span asp-validation-for="BannerImage" class="validation"></span></div>
             <div class="field full"><label asp-for="BannerImageUrl"></label><input asp-for="BannerImageUrl" /><span asp-validation-for="BannerImageUrl" class="validation"></span></div>
             <div class="field full"><label asp-for="Description"></label><textarea asp-for="Description" rows="4"></textarea><span asp-validation-for="Description" class="validation"></span></div>
         </div>
