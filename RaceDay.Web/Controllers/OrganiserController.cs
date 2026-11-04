@@ -146,4 +146,81 @@ public sealed class OrganiserController(
 
         return RedirectToAction(nameof(Index));
     }
+
+    [HttpGet]
+    public async Task<IActionResult> ManageCategories(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return BadRequest();
+
+        try
+        {
+            using var response = await _api.GetAsync($"api/events/{Uri.EscapeDataString(id)}");
+            if (!response.IsSuccessStatusCode) return NotFound();
+
+            var details = await response.Content.ReadFromJsonAsync<EventDetailsEnvelope>();
+            if (details?.RaceEvent is null) return NotFound();
+
+            return View(new CategoryManagementViewModel
+            {
+                EventID = details.RaceEvent.EventID,
+                EventName = details.RaceEvent.EventName,
+                Categories = details.Categories
+            });
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not load event categories.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+            return RedirectToAction(nameof(Index));
+        }
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddCategory(string id, CategoryFormViewModel model)
+    {
+        if (model.MinimumAge.HasValue && model.MaximumAge.HasValue
+            && model.MinimumAge > model.MaximumAge)
+            ModelState.AddModelError(nameof(model.MaximumAge), "Maximum age must be greater than or equal to minimum age.");
+
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Please check the category details and try again.";
+            return RedirectToAction(nameof(ManageCategories), new { id });
+        }
+
+        try
+        {
+            using var response = await _api.PostAsJsonAsync($"api/events/{Uri.EscapeDataString(id)}/categories", model);
+            TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
+                ? "The category has been added."
+                : "The category could not be added. Check the event and category details.";
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not add event category.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+        }
+
+        return RedirectToAction(nameof(ManageCategories), new { id });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCategory(string id, string categoryId)
+    {
+        try
+        {
+            using var response = await _api.DeleteAsync(
+                $"api/events/{Uri.EscapeDataString(id)}/categories/{Uri.EscapeDataString(categoryId)}");
+            TempData[response.IsSuccessStatusCode ? "Success" : "Error"] = response.IsSuccessStatusCode
+                ? "The category has been removed."
+                : "This category cannot be removed because it may already have participant entries.";
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not remove event category.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+        }
+
+        return RedirectToAction(nameof(ManageCategories), new { id });
+    }
 }
