@@ -1,4 +1,5 @@
 using RaceDay.Web;
+using RaceDay.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -6,6 +7,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddTransient<SessionTokenHandler>();
+builder.Services.AddSingleton<AzureBlobStorageService>();
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = ".RaceDay.Session";
