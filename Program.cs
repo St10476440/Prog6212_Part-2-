@@ -9,7 +9,9 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<RaceDayDataContext>
-    (options => options.UseInMemoryDatabase("StoreDb"));
+    (options => options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? throw new InvalidOperationException("Configure ConnectionStrings:DefaultConnection.")));
 
 var app = builder.Build();
 
