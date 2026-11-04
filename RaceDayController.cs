@@ -127,7 +127,8 @@ public class RaceDayController : ControllerBase
         if (user == null)
             return NotFound("User profile not found.");
 
-        user.PhoneNumber = request.Phone;
+        user.PhoneNumber = request.Phone.Trim();
+        user.EmergencyContact = request.EmergencyContact?.Trim();
         _context.SaveChanges();
 
         return Ok(PublicProfile(user));
