@@ -101,3 +101,12 @@ public sealed class ParticipantEventDetailsViewModel
     public VenueDetailsDto? Venue { get; set; }
     public List<CategoryDetailsDto> Categories { get; set; } = new();
 }
+
+public sealed class ParticipantResultViewModel
+{
+    public string ResultsID { get; set; } = string.Empty;
+    public string EnrolmentID { get; set; } = string.Empty;
+    public TimeOnly FinishTime { get; set; }
+    public string Position { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+}
