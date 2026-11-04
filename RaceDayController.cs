@@ -495,11 +495,27 @@ public class RaceDayController : ControllerBase
             .Select(e => e.EnrolmentID)
             .ToList();
 
-        var history = _context.Results
-            .Where(r => myEnrolmentIds.Contains(r.EnrolmentID))
-            .ToList();
+        var history = from result in _context.Results
+                      join enrolment in _context.Enrolments
+                          on result.EnrolmentID equals enrolment.EnrolmentID
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join raceEvent in _context.Events
+                          on category.EventID equals raceEvent.EventID
+                      where myEnrolmentIds.Contains(result.EnrolmentID)
+                      orderby raceEvent.EventDate descending
+                      select new
+                      {
+                          result.ResultsID,
+                          result.EnrolmentID,
+                          result.FinishTime,
+                          result.Position,
+                          result.Status,
+                          EventName = raceEvent.EventName,
+                          CategoryName = category.CategoryName
+                      };
 
-        return Ok(history);
+        return Ok(history.ToList());
     }
 
     // ==========================================
