@@ -312,6 +312,27 @@ public class RaceDayController : ControllerBase
         return Ok(categories);
     }
 
+    [Authorize(Roles = "Organiser")]
+    [HttpDelete("api/events/{id}/categories/{categoryId}")]
+    public IActionResult DeleteCategory(string id, string categoryId)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == id && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == categoryId && c.EventID == id);
+        if (category == null)
+            return NotFound("Category not found.");
+
+        if (_context.Enrolments.Any(e => e.CategoryID == categoryId))
+            return Conflict("This category has participant entries and cannot be deleted.");
+
+        _context.Categories.Remove(category);
+        _context.SaveChanges();
+        return NoContent();
+    }
+
     // ==========================================
     // 4. ENROLMENT ENDPOINTS
     // ==========================================
