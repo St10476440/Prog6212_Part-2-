@@ -2,12 +2,14 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc;
 using RaceDay.Web.Filters;
 using RaceDay.Web.Models;
+using RaceDay.Web.Services;
 
 namespace RaceDay.Web.Controllers;
 
 [SessionAuthorize("Organiser")]
 public sealed class OrganiserController(
     IHttpClientFactory clients,
+    AzureBlobStorageService blobStorage,
     ILogger<OrganiserController> logger) : Controller
 {
     private readonly HttpClient _api = clients.CreateClient("RaceDayApi");
@@ -46,7 +48,15 @@ public sealed class OrganiserController(
 
         try
         {
-            using var response = await _api.PostAsJsonAsync("api/events", model);
+            if (model.BannerImage is { Length: > 0 })
+                model.BannerImageUrl = await blobStorage.UploadEventBannerAsync(model.BannerImage);
+
+            using var response = await _api.PostAsJsonAsync("api/events", new
+            {
+                model.EventName, model.EventType, model.EventDate, model.Description,
+                model.Location, model.DistanceKm, model.VenueName, model.City,
+                model.Province, model.BannerImageUrl
+            });
             if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError(string.Empty, "The event could not be saved. Check the details and try again.");
@@ -55,6 +65,11 @@ public sealed class OrganiserController(
 
             TempData["Success"] = "Your event has been created.";
             return RedirectToAction(nameof(Index));
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(nameof(model.BannerImage), ex.Message);
+            return View(model);
         }
         catch (HttpRequestException ex)
         {
@@ -109,7 +124,15 @@ public sealed class OrganiserController(
 
         try
         {
-            using var response = await _api.PutAsJsonAsync($"api/events/{Uri.EscapeDataString(id)}", model);
+            if (model.BannerImage is { Length: > 0 })
+                model.BannerImageUrl = await blobStorage.UploadEventBannerAsync(model.BannerImage);
+
+            using var response = await _api.PutAsJsonAsync($"api/events/{Uri.EscapeDataString(id)}", new
+            {
+                model.EventName, model.EventType, model.EventDate, model.Description,
+                model.Location, model.DistanceKm, model.VenueName, model.City,
+                model.Province, model.BannerImageUrl
+            });
             if (!response.IsSuccessStatusCode)
             {
                 ModelState.AddModelError(string.Empty, "The event could not be updated. It may no longer be available.");
@@ -118,6 +141,11 @@ public sealed class OrganiserController(
 
             TempData["Success"] = "Your event details have been updated.";
             return RedirectToAction(nameof(Index));
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(nameof(model.BannerImage), ex.Message);
+            return View(model);
         }
         catch (HttpRequestException ex)
         {
