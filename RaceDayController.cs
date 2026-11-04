@@ -321,15 +321,27 @@ public class RaceDayController : ControllerBase
     public IActionResult Enrol([FromBody] EnrolmentRequest request)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        bool alreadyEnrolled = _context.Enrolments.Any(e => e.ParticipantID == userId);
-        if (alreadyEnrolled)
-            return Conflict("Already entered in this event.");
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == request.CategoryID && c.EventID == request.EventID);
+        if (category == null)
+            return BadRequest("The selected category does not belong to this event.");
+
+        var eventCategoryIds = _context.Categories
+            .Where(c => c.EventID == request.EventID)
+            .Select(c => c.CategoryID)
+            .ToList();
+
+        if (_context.Enrolments.Any(e =>
+            e.ParticipantID == userId && eventCategoryIds.Contains(e.CategoryID)))
+            return Conflict("You already have an entry for this event.");
 
         var enrolment = new Enrolments
         {
             ParticipantID = userId,
-            CategoryID = request.CategoryID,
+            CategoryID = category.CategoryID
         };
 
         _context.Enrolments.Add(enrolment);
@@ -343,9 +355,19 @@ public class RaceDayController : ControllerBase
     public IActionResult GetMyEntries()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var myEnrolments = _context.Enrolments.Where(e => e.ParticipantID == userId).ToList();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        return Ok(myEnrolments);
+        var entries = from enrolment in _context.Enrolments
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join raceEvent in _context.Events
+                          on category.EventID equals raceEvent.EventID
+                      where enrolment.ParticipantID == userId
+                      orderby raceEvent.EventDate
+                      select new { enrolment, category, raceEvent };
+
+        return Ok(entries.ToList());
     }
 
     // ==========================================
@@ -366,10 +388,18 @@ public class RaceDayController : ControllerBase
     }
 
     [HttpGet("api/results/event/{eventId}")]
-    public IActionResult GetLeaderboard(string enrolmentId)
+    public IActionResult GetLeaderboard(string eventId)
     {
+        if (!_context.Events.Any(e => e.EventID == eventId))
+            return NotFound("Event not found.");
+
+        var categoryIds = _context.Categories
+            .Where(c => c.EventID == eventId)
+            .Select(c => c.CategoryID)
+            .ToList();
+
         var enrolmentIds = _context.Enrolments
-            .Where(e => e.EnrolmentID == enrolmentId)
+            .Where(e => categoryIds.Contains(e.CategoryID))
             .Select(e => e.EnrolmentID)
             .ToList();
 
