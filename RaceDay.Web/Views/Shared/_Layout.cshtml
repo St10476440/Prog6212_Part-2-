@@ -25,6 +25,7 @@
                 @if (Context.Session.GetString("AuthToken") is not null)
                 {
                     <span class="nav-user">@Context.Session.GetString("FullName")</span>
+                    <a asp-controller="Account" asp-action="Profile">Profile</a>
                     <form asp-controller="Account" asp-action="Logout" method="post" class="inline-form">
                         <button class="button button-small button-outline" type="submit">Sign out</button>
                     </form>

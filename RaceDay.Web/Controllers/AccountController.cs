@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
 using RaceDay.Web.Models;
+using RaceDay.Web.Filters;
 
 namespace RaceDay.Web.Controllers;
 
@@ -118,5 +119,57 @@ public sealed class AccountController(IHttpClientFactory clients, ILogger<Accoun
     {
         HttpContext.Session.Clear();
         return RedirectToAction("Index", "Home");
+    }
+
+    [SessionAuthorize]
+    [HttpGet]
+    public async Task<IActionResult> Profile()
+    {
+        try
+        {
+            using var response = await _api.GetAsync("api/users/profile");
+            if (!response.IsSuccessStatusCode)
+                return RedirectToAction(nameof(Login));
+
+            var profile = await response.Content.ReadFromJsonAsync<ProfileViewModel>();
+            return View(profile ?? new ProfileViewModel());
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not load the user profile.");
+            TempData["Error"] = "The RaceDay API is unavailable.";
+            return RedirectToAction("Index", "Home");
+        }
+    }
+
+    [SessionAuthorize]
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> Profile(ProfileViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        try
+        {
+            using var response = await _api.PutAsJsonAsync("api/users/profile", new
+            {
+                Phone = model.PhoneNumber,
+                model.EmergencyContact
+            });
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ModelState.AddModelError(string.Empty, "Your profile could not be updated.");
+                return View(model);
+            }
+
+            TempData["Success"] = "Your profile has been updated.";
+            return RedirectToAction(nameof(Profile));
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "Could not update the user profile.");
+            ModelState.AddModelError(string.Empty, "The RaceDay API is unavailable.");
+            return View(model);
+        }
     }
 }

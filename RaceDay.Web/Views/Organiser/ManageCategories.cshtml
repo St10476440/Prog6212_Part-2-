@@ -1,0 +1,45 @@
+@model RaceDay.Web.Models.CategoryManagementViewModel
+@{ ViewData["Title"] = "Manage categories"; }
+<section class="form-page">
+    <a class="text-link" asp-action="Index">← Back to organiser dashboard</a>
+    <p class="eyebrow">EVENT CATEGORIES</p>
+    <h1>@Model.EventName</h1>
+    <p class="muted">Set up the distances and age groups participants can enter.</p>
+    @if (TempData["Success"] is string success) { <div class="alert success" role="status">@success</div> }
+    @if (TempData["Error"] is string error) { <div class="alert error" role="alert">@error</div> }
+    <h2>Current categories</h2>
+    @if (Model.Categories.Count == 0)
+    {
+        <div class="empty-state"><p>No categories have been created for this event.</p></div>
+    }
+    else
+    {
+        <div class="category-list">
+        @foreach (var category in Model.Categories)
+        {
+            <article class="category-row">
+                <div><h3>@category.CategoryName</h3><p>@category.Distance · @category.Country</p><span class="muted">Age: @(category.MinimumAge?.ToString() ?? "Any") – @(category.MaximumAge?.ToString() ?? "Any")</span></div>
+                <div class="category-entry"><strong>R @category.EntryFee.ToString("0.00")</strong>
+                    <form asp-action="DeleteCategory" method="post">
+                        <input type="hidden" name="id" value="@Model.EventID" />
+                        <input type="hidden" name="categoryId" value="@category.CategoryID" />
+                        <button class="button button-small button-danger" type="submit">Remove</button>
+                    </form>
+                </div>
+            </article>
+        }
+        </div>
+    }
+    <h2 class="subsection-title">Add a category</h2>
+    <form asp-action="AddCategory" asp-route-id="@Model.EventID" method="post" class="form-card form-card-wide">
+        <div class="form-grid">
+            <div class="field"><label for="CategoryName">Category name</label><input id="CategoryName" name="CategoryName" required maxlength="100" placeholder="Open 10K" /></div>
+            <div class="field"><label for="Distance">Distance</label><input id="Distance" name="Distance" required maxlength="60" placeholder="10 km" /></div>
+            <div class="field"><label for="MinimumAge">Minimum age</label><input id="MinimumAge" name="MinimumAge" type="number" min="1" max="120" /></div>
+            <div class="field"><label for="MaximumAge">Maximum age</label><input id="MaximumAge" name="MaximumAge" type="number" min="1" max="120" /></div>
+            <div class="field"><label for="EntryFee">Entry fee (R)</label><input id="EntryFee" name="EntryFee" type="number" min="0" step="0.01" value="0" /></div>
+            <div class="field"><label for="Country">Country</label><input id="Country" name="Country" value="South Africa" maxlength="100" /></div>
+        </div>
+        <div class="form-actions"><button class="button" type="submit">Add category</button></div>
+    </form>
+</section>

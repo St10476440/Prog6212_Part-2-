@@ -14,11 +14,17 @@ namespace RaceDayApp.Controllers;
 public class RaceDayController : ControllerBase
 {
     private readonly RaceDayDataContext _context;
-    private const string SecretKey = "RaceDaySuperSecretKeyThatIsAtLeast32CharactersLong!";
+    private readonly string _jwtKey;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
 
-    public RaceDayController(RaceDayDataContext context)
+    public RaceDayController(RaceDayDataContext context, IConfiguration configuration)
     {
         _context = context;
+        _jwtKey = configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("Configure Jwt:Key.");
+        _jwtIssuer = configuration["Jwt:Issuer"] ?? "RaceDay.Api";
+        _jwtAudience = configuration["Jwt:Audience"] ?? "RaceDay.Client";
     }
 
     // ==========================================
@@ -121,7 +127,8 @@ public class RaceDayController : ControllerBase
         if (user == null)
             return NotFound("User profile not found.");
 
-        user.PhoneNumber = request.Phone;
+        user.PhoneNumber = request.Phone.Trim();
+        user.EmergencyContact = request.EmergencyContact?.Trim();
         _context.SaveChanges();
 
         return Ok(PublicProfile(user));
@@ -142,17 +149,58 @@ public class RaceDayController : ControllerBase
         if (date.HasValue)
             query = query.Where(e => e.EventDate == date.Value);
 
-        return Ok(query.ToList());
+        return Ok(query.OrderBy(e => e.EventDate).ToList());
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpGet("api/events/mine")]
+    public IActionResult GetMyEvents()
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(organiserId))
+            return Unauthorized();
+
+        var events = _context.Events
+            .Where(e => e.OrganiserID == organiserId)
+            .OrderBy(e => e.EventDate)
+            .ToList();
+
+        return Ok(events);
     }
 
     [Authorize(Roles = "Organiser")]
     [HttpPost("api/events")]
-    public IActionResult CreateEvent([FromBody] Events newEvent)
+    public IActionResult CreateEvent([FromBody] CreateEventRequest request)
     {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(organiserId))
+            return Unauthorized();
+
+        var venue = new Venue
+        {
+            VenueName = request.VenueName.Trim(),
+            City = request.City.Trim(),
+            Province = request.Province.Trim()
+        };
+
+        var newEvent = new Events
+        {
+            OrganiserID = organiserId,
+            VenueID = venue.VenueID,
+            EventName = request.EventName.Trim(),
+            EventType = request.EventType.Trim(),
+            EventDate = request.EventDate,
+            Description = request.Description.Trim(),
+            Location = request.Location.Trim(),
+            DistanceKm = request.DistanceKm,
+            BannerImageUrl = request.BannerImageUrl
+        };
+
+        _context.Venue.Add(venue);
         _context.Events.Add(newEvent);
         _context.SaveChanges();
 
-        return StatusCode(201, newEvent);
+        return CreatedAtAction(nameof(GetEventById), new { id = newEvent.EventID }, newEvent);
     }
 
     [HttpGet("api/events/{id}")]
@@ -162,27 +210,158 @@ public class RaceDayController : ControllerBase
         if (raceEvent == null)
             return NotFound("Event not found.");
 
+        var venue = _context.Venue.Find(raceEvent.VenueID);
         var categories = _context.Categories.Where(c => c.EventID == id).ToList();
 
-        return Ok(new { raceEvent, categories });
+        return Ok(new { raceEvent, venue, categories });
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpPut("api/events/{id}")]
+    public IActionResult UpdateEvent(string id, [FromBody] CreateEventRequest request)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        var venue = _context.Venue.Find(raceEvent.VenueID);
+        if (venue == null)
+            return Conflict("The event venue record could not be found.");
+
+        venue.VenueName = request.VenueName.Trim();
+        venue.City = request.City.Trim();
+        venue.Province = request.Province.Trim();
+
+        raceEvent.EventName = request.EventName.Trim();
+        raceEvent.EventType = request.EventType.Trim();
+        raceEvent.EventDate = request.EventDate;
+        raceEvent.Description = request.Description.Trim();
+        raceEvent.Location = request.Location.Trim();
+        raceEvent.DistanceKm = request.DistanceKm;
+        raceEvent.BannerImageUrl = request.BannerImageUrl;
+
+        _context.SaveChanges();
+        return Ok(raceEvent);
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpDelete("api/events/{id}")]
+    public IActionResult DeleteEvent(string id)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        var categories = _context.Categories.Where(c => c.EventID == id).ToList();
+        var categoryIds = categories.Select(c => c.CategoryID).ToList();
+
+        if (_context.Enrolments.Any(e => categoryIds.Contains(e.CategoryID)))
+            return Conflict("This event has participant entries and cannot be deleted.");
+
+        _context.Categories.RemoveRange(categories);
+        _context.Events.Remove(raceEvent);
+        _context.SaveChanges();
+
+        return NoContent();
     }
 
     [Authorize(Roles = "Organiser")]
     [HttpPost("api/events/{id}/categories")]
-    public IActionResult AddCategory(string id, [FromBody] Categories newCategory)
+    public IActionResult AddCategory(string id, [FromBody] CreateCategoryRequest request)
     {
-        newCategory.EventID = id;
-        _context.Categories.Add(newCategory);
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var raceEvent = _context.Events.FirstOrDefault(
+            e => e.EventID == id && e.OrganiserID == organiserId);
+
+        if (raceEvent == null)
+            return NotFound("Event not found for this organiser.");
+
+        if (request.MinimumAge.HasValue && request.MaximumAge.HasValue
+            && request.MinimumAge > request.MaximumAge)
+            return BadRequest("Minimum age cannot exceed maximum age.");
+
+        var category = new Categories
+        {
+            EventID = id,
+            CategoryName = request.CategoryName.Trim(),
+            Distance = request.Distance.Trim(),
+            Country = request.Country.Trim(),
+            MinimumAge = request.MinimumAge,
+            MaximumAge = request.MaximumAge,
+            EntryFee = request.EntryFee
+        };
+
+        _context.Categories.Add(category);
         _context.SaveChanges();
 
-        return StatusCode(StatusCodes.Status201Created, newCategory);
+        return StatusCode(StatusCodes.Status201Created, category);
     }
 
     [HttpGet("api/events/{id}/categories")]
     public IActionResult GetCategoriesForEvent(string id)
     {
+        if (!_context.Events.Any(e => e.EventID == id))
+            return NotFound("Event not found.");
+
         var categories = _context.Categories.Where(c => c.EventID == id).ToList();
         return Ok(categories);
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpDelete("api/events/{id}/categories/{categoryId}")]
+    public IActionResult DeleteCategory(string id, string categoryId)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == id && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == categoryId && c.EventID == id);
+        if (category == null)
+            return NotFound("Category not found.");
+
+        if (_context.Enrolments.Any(e => e.CategoryID == categoryId))
+            return Conflict("This category has participant entries and cannot be deleted.");
+
+        _context.Categories.Remove(category);
+        _context.SaveChanges();
+        return NoContent();
+    }
+
+    [Authorize(Roles = "Organiser")]
+    [HttpGet("api/events/{id}/entries")]
+    public IActionResult GetEventEntries(string id)
+    {
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == id && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var entries = from enrolment in _context.Enrolments
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join participant in _context.Users
+                          on enrolment.ParticipantID equals participant.UserID
+                      where category.EventID == id
+                      orderby enrolment.RegistrationDate
+                      select new
+                      {
+                          enrolment,
+                          category,
+                          participant = new
+                          {
+                              participant.UserID,
+                              participant.FullName,
+                              participant.Email
+                          }
+                      };
+
+        return Ok(entries.ToList());
     }
 
     // ==========================================
@@ -194,15 +373,27 @@ public class RaceDayController : ControllerBase
     public IActionResult Enrol([FromBody] EnrolmentRequest request)
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        bool alreadyEnrolled = _context.Enrolments.Any(e => e.ParticipantID == userId);
-        if (alreadyEnrolled)
-            return Conflict("Already entered in this event.");
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == request.CategoryID && c.EventID == request.EventID);
+        if (category == null)
+            return BadRequest("The selected category does not belong to this event.");
+
+        var eventCategoryIds = _context.Categories
+            .Where(c => c.EventID == request.EventID)
+            .Select(c => c.CategoryID)
+            .ToList();
+
+        if (_context.Enrolments.Any(e =>
+            e.ParticipantID == userId && eventCategoryIds.Contains(e.CategoryID)))
+            return Conflict("You already have an entry for this event.");
 
         var enrolment = new Enrolments
         {
             ParticipantID = userId,
-            CategoryID = request.CategoryID,
+            CategoryID = category.CategoryID
         };
 
         _context.Enrolments.Add(enrolment);
@@ -216,9 +407,19 @@ public class RaceDayController : ControllerBase
     public IActionResult GetMyEntries()
     {
         var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var myEnrolments = _context.Enrolments.Where(e => e.ParticipantID == userId).ToList();
+        if (string.IsNullOrWhiteSpace(userId))
+            return Unauthorized();
 
-        return Ok(myEnrolments);
+        var entries = from enrolment in _context.Enrolments
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join raceEvent in _context.Events
+                          on category.EventID equals raceEvent.EventID
+                      where enrolment.ParticipantID == userId
+                      orderby raceEvent.EventDate
+                      select new { enrolment, category, raceEvent };
+
+        return Ok(entries.ToList());
     }
 
     // ==========================================
@@ -226,11 +427,32 @@ public class RaceDayController : ControllerBase
     // ==========================================
 
     [Authorize(Roles = "Organiser")]
-    [HttpPost("api/results")]
-    public IActionResult RecordResult([FromBody] RaceDayModel.Models.Results result)
+    [HttpPost("api/events/{eventId}/results")]
+    public IActionResult RecordResult(string eventId, [FromBody] RecordResultRequest request)
     {
-        if (result == null)
-            return BadRequest("Result payload cannot be null.");
+        var organiserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!_context.Events.Any(e => e.EventID == eventId && e.OrganiserID == organiserId))
+            return NotFound("Event not found for this organiser.");
+
+        var enrolment = _context.Enrolments.Find(request.EnrolmentID);
+        if (enrolment == null)
+            return NotFound("Participant entry not found.");
+
+        var category = _context.Categories.FirstOrDefault(
+            c => c.CategoryID == enrolment.CategoryID && c.EventID == eventId);
+        if (category == null)
+            return BadRequest("The participant entry does not belong to this event.");
+
+        if (_context.Results.Any(r => r.EnrolmentID == enrolment.EnrolmentID))
+            return Conflict("A result has already been recorded for this entry.");
+
+        var result = new RaceDayModel.Models.Results
+        {
+            EnrolmentID = enrolment.EnrolmentID,
+            FinishTime = request.FinishTime,
+            Position = request.Position.Trim(),
+            Status = request.Status.Trim()
+        };
 
         _context.Results.Add(result);
         _context.SaveChanges();
@@ -239,10 +461,18 @@ public class RaceDayController : ControllerBase
     }
 
     [HttpGet("api/results/event/{eventId}")]
-    public IActionResult GetLeaderboard(string enrolmentId)
+    public IActionResult GetLeaderboard(string eventId)
     {
+        if (!_context.Events.Any(e => e.EventID == eventId))
+            return NotFound("Event not found.");
+
+        var categoryIds = _context.Categories
+            .Where(c => c.EventID == eventId)
+            .Select(c => c.CategoryID)
+            .ToList();
+
         var enrolmentIds = _context.Enrolments
-            .Where(e => e.EnrolmentID == enrolmentId)
+            .Where(e => categoryIds.Contains(e.CategoryID))
             .Select(e => e.EnrolmentID)
             .ToList();
 
@@ -265,11 +495,27 @@ public class RaceDayController : ControllerBase
             .Select(e => e.EnrolmentID)
             .ToList();
 
-        var history = _context.Results
-            .Where(r => myEnrolmentIds.Contains(r.EnrolmentID))
-            .ToList();
+        var history = from result in _context.Results
+                      join enrolment in _context.Enrolments
+                          on result.EnrolmentID equals enrolment.EnrolmentID
+                      join category in _context.Categories
+                          on enrolment.CategoryID equals category.CategoryID
+                      join raceEvent in _context.Events
+                          on category.EventID equals raceEvent.EventID
+                      where myEnrolmentIds.Contains(result.EnrolmentID)
+                      orderby raceEvent.EventDate descending
+                      select new
+                      {
+                          result.ResultsID,
+                          result.EnrolmentID,
+                          result.FinishTime,
+                          result.Position,
+                          result.Status,
+                          EventName = raceEvent.EventName,
+                          CategoryName = category.CategoryName
+                      };
 
-        return Ok(history);
+        return Ok(history.ToList());
     }
 
     // ==========================================
@@ -278,8 +524,10 @@ public class RaceDayController : ControllerBase
 
     private string CreateJwtToken(Users user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtKey));
         var token = new JwtSecurityToken(
+            issuer: _jwtIssuer,
+            audience: _jwtAudience,
             claims: new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserID),
