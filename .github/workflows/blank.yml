@@ -41,3 +41,6 @@ jobs:
 
       - name: Build solution
         run: dotnet build POE_Part2.sln --configuration Release --no-restore
+
+      - name: Build MVC Docker image
+        run: docker build -f RaceDay.Web/Dockerfile -t raceday-web:ci .
