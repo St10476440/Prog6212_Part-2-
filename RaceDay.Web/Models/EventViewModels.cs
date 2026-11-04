@@ -61,3 +61,43 @@ public sealed class VenueDetailsDto
     public string City { get; set; } = string.Empty;
     public string Province { get; set; } = string.Empty;
 }
+
+public sealed class ParticipantDashboardViewModel
+{
+    public List<EventListItemViewModel> Events { get; set; } = new();
+    public List<ParticipantEntryViewModel> Entries { get; set; } = new();
+    public string? ErrorMessage { get; set; }
+}
+
+public sealed class ParticipantEntryViewModel
+{
+    public EnrolmentDetailsDto Enrolment { get; set; } = new();
+    public CategoryDetailsDto Category { get; set; } = new();
+    public EventListItemViewModel RaceEvent { get; set; } = new();
+}
+
+public sealed class EnrolmentDetailsDto
+{
+    public string EnrolmentID { get; set; } = string.Empty;
+    public DateOnly RegistrationDate { get; set; }
+    public string Status { get; set; } = string.Empty;
+}
+
+public sealed class CategoryDetailsDto
+{
+    public string CategoryID { get; set; } = string.Empty;
+    public string EventID { get; set; } = string.Empty;
+    public string CategoryName { get; set; } = string.Empty;
+    public string Distance { get; set; } = string.Empty;
+    public string Country { get; set; } = string.Empty;
+    public int? MinimumAge { get; set; }
+    public int? MaximumAge { get; set; }
+    public decimal EntryFee { get; set; }
+}
+
+public sealed class ParticipantEventDetailsViewModel
+{
+    public EventDetailsDto RaceEvent { get; set; } = new();
+    public VenueDetailsDto? Venue { get; set; }
+    public List<CategoryDetailsDto> Categories { get; set; } = new();
+}
