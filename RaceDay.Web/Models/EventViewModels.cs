@@ -24,6 +24,9 @@ public sealed class EventFormViewModel
     public string Province { get; set; } = string.Empty;
     [Url, StringLength(500)]
     public string? BannerImageUrl { get; set; }
+
+    [Display(Name = "Upload banner image (JPG, PNG or WebP; max 5 MB)")]
+    public IFormFile? BannerImage { get; set; }
 }
 
 public sealed class EventListItemViewModel
