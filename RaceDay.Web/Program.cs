@@ -1,0 +1,26 @@
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddControllersWithViews();
+
+// All future data operations go through the API, never a database connection.
+var apiBaseUrl = builder.Configuration["Api:BaseUrl"];
+if (!Uri.TryCreate(apiBaseUrl, UriKind.Absolute, out var apiUri)
+    || (apiUri.Scheme != "http" && apiUri.Scheme != "https"))
+    throw new InvalidOperationException("Configure Api:BaseUrl as an HTTP(S) API URL.");
+
+builder.Services.AddHttpClient("RaceDayApi", client =>
+{
+    client.BaseAddress = new Uri(apiUri.AbsoluteUri.TrimEnd('/') + "/");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
+var app = builder.Build();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
+app.MapControllerRoute("default", "{controller=Home}/{action=Index}/{id?}");
+app.Run();

@@ -17,4 +17,8 @@
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.23.0" />
   </ItemGroup>
 
+  <!-- The MVC application is a separate project, not API source/content. -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);RaceDay.Web/**</DefaultItemExcludes>
+  </PropertyGroup>
 </Project>

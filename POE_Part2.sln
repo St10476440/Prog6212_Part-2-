@@ -5,12 +5,18 @@ VisualStudioVersion = 17.14.36915.13 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "POE_Part2", "POE_Part2.csproj", "{6A45CFA8-C753-4951-B524-9C68A071A04F}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RaceDay.Web", "RaceDay.Web\RaceDay.Web.csproj", "{40D854D4-953F-4588-927C-28C9AF780A21}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{40D854D4-953F-4588-927C-28C9AF780A21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{40D854D4-953F-4588-927C-28C9AF780A21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{40D854D4-953F-4588-927C-28C9AF780A21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40D854D4-953F-4588-927C-28C9AF780A21}.Release|Any CPU.Build.0 = Release|Any CPU
 		{6A45CFA8-C753-4951-B524-9C68A071A04F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{6A45CFA8-C753-4951-B524-9C68A071A04F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A45CFA8-C753-4951-B524-9C68A071A04F}.Release|Any CPU.ActiveCfg = Release|Any CPU
