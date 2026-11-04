@@ -209,9 +209,10 @@ public class RaceDayController : ControllerBase
         if (raceEvent == null)
             return NotFound("Event not found.");
 
+        var venue = _context.Venue.Find(raceEvent.VenueID);
         var categories = _context.Categories.Where(c => c.EventID == id).ToList();
 
-        return Ok(new { raceEvent, categories });
+        return Ok(new { raceEvent, venue, categories });
     }
 
     [Authorize(Roles = "Organiser")]
