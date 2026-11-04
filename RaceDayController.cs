@@ -1,5 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity.Data;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using RaceDayData.Data;
@@ -26,33 +26,75 @@ public class RaceDayController : ControllerBase
     // ==========================================
 
     [HttpPost("api/auth/register")]
-    public IActionResult Register([FromBody] Users newUser)
+    public IActionResult Register([FromBody] RegisterUserRequest request)
     {
-        if (_context.Users.Any(u => u.Email == newUser.Email))
+        var email = request.Email.Trim().ToLowerInvariant();
+        if (_context.Users.Any(u => u.Email.ToLower() == email))
             return Conflict("Email already registered.");
 
-        _context.Users.Add(newUser);
+        // Construct the entity here so callers cannot choose a user ID.
+        var user = new Users
+        {
+            FullName = request.FullName.Trim(),
+            Email = email,
+            Role = request.Role,
+            PhoneNumber = request.PhoneNumber.Trim()
+        };
+        user.Password = new PasswordHasher<Users>().HashPassword(user, request.Password);
+        _context.Users.Add(user);
         _context.SaveChanges();
 
-        var token = CreateJwtToken(newUser);
         return StatusCode(201, new
         {
             message = "User registered successfully",
-            token,
-            user = newUser
+            token = CreateJwtToken(user),
+            userId = user.UserID,
+            role = user.Role,
+            user = PublicProfile(user)
         });
     }
 
     [HttpPost("api/auth/login")]
-    public IActionResult Login([FromBody] LoginRequest request)
+    public IActionResult Login([FromBody] SignInRequest request)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Email == request.Email && u.Password == request.Password);
+        var email = request.Email.Trim().ToLowerInvariant();
+        var user = _context.Users.FirstOrDefault(u => u.Email.ToLower() == email);
         if (user == null)
             return Unauthorized("Invalid email or password.");
 
-        var token = CreateJwtToken(user);
-        return Ok(new { token, role = user.Role });
+        var hasher = new PasswordHasher<Users>();
+        PasswordVerificationResult verification;
+        try
+        {
+            verification = hasher.VerifyHashedPassword(user, user.Password, request.Password);
+        }
+        catch (FormatException)
+        {
+            // Legacy plaintext values are not accepted as password hashes.
+            verification = PasswordVerificationResult.Failed;
+        }
+        if (verification == PasswordVerificationResult.Failed)
+            return Unauthorized("Invalid email or password.");
+
+        if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.Password = hasher.HashPassword(user, request.Password);
+            _context.SaveChanges();
+        }
+        return Ok(new
+        {
+            token = CreateJwtToken(user),
+            userId = user.UserID,
+            role = user.Role,
+            user = PublicProfile(user)
+        });
     }
+
+    private static object PublicProfile(Users user) => new
+    {
+        user.UserID, user.FullName, user.Email, user.Role, user.PhoneNumber,
+        user.DateOfBirth, user.EmergencyContact, user.ProfilePictureUrl
+    };
 
     // ==========================================
     // 2. USER PROFILE ENDPOINTS
@@ -67,7 +109,7 @@ public class RaceDayController : ControllerBase
         if (user == null)
             return NotFound("User profile not found.");
 
-        return Ok(user);
+        return Ok(PublicProfile(user));
     }
 
     [Authorize]
@@ -82,7 +124,7 @@ public class RaceDayController : ControllerBase
         user.PhoneNumber = request.Phone;
         _context.SaveChanges();
 
-        return Ok(user);
+        return Ok(PublicProfile(user));
     }
 
     // ==========================================
