@@ -41,6 +41,7 @@ public sealed class EventDetailsEnvelope
 {
     public EventDetailsDto? RaceEvent { get; set; }
     public VenueDetailsDto? Venue { get; set; }
+    public List<CategoryDetailsDto> Categories { get; set; } = new();
 }
 
 public sealed class EventDetailsDto
@@ -109,4 +110,28 @@ public sealed class ParticipantResultViewModel
     public TimeOnly FinishTime { get; set; }
     public string Position { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+}
+
+public sealed class CategoryFormViewModel
+{
+    [Required, StringLength(100)]
+    public string CategoryName { get; set; } = string.Empty;
+    [Required, StringLength(60)]
+    public string Distance { get; set; } = string.Empty;
+    [StringLength(100)]
+    public string Country { get; set; } = "South Africa";
+    [Range(1, 120)]
+    public int? MinimumAge { get; set; }
+    [Range(1, 120)]
+    public int? MaximumAge { get; set; }
+    [Range(typeof(decimal), "0", "100000")]
+    public decimal EntryFee { get; set; }
+}
+
+public sealed class CategoryManagementViewModel
+{
+    public string EventID { get; set; } = string.Empty;
+    public string EventName { get; set; } = string.Empty;
+    public List<CategoryDetailsDto> Categories { get; set; } = new();
+    public CategoryFormViewModel NewCategory { get; set; } = new();
 }
