@@ -2,6 +2,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddTransient<SessionTokenHandler>();
 builder.Services.AddSession(options =>
 {
     options.Cookie.Name = ".RaceDay.Session";
@@ -21,7 +23,7 @@ builder.Services.AddHttpClient("RaceDayApi", client =>
 {
     client.BaseAddress = new Uri(apiUri.AbsoluteUri.TrimEnd('/') + "/");
     client.Timeout = TimeSpan.FromSeconds(30);
-});
+}).AddHttpMessageHandler<SessionTokenHandler>();
 
 var app = builder.Build();
 if (!app.Environment.IsDevelopment())
