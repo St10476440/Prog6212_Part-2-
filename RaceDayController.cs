@@ -14,11 +14,17 @@ namespace RaceDayApp.Controllers;
 public class RaceDayController : ControllerBase
 {
     private readonly RaceDayDataContext _context;
-    private const string SecretKey = "RaceDaySuperSecretKeyThatIsAtLeast32CharactersLong!";
+    private readonly string _jwtKey;
+    private readonly string _jwtIssuer;
+    private readonly string _jwtAudience;
 
-    public RaceDayController(RaceDayDataContext context)
+    public RaceDayController(RaceDayDataContext context, IConfiguration configuration)
     {
         _context = context;
+        _jwtKey = configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("Configure Jwt:Key.");
+        _jwtIssuer = configuration["Jwt:Issuer"] ?? "RaceDay.Api";
+        _jwtAudience = configuration["Jwt:Audience"] ?? "RaceDay.Client";
     }
 
     // ==========================================
@@ -278,8 +284,10 @@ public class RaceDayController : ControllerBase
 
     private string CreateJwtToken(Users user)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(SecretKey));
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtKey));
         var token = new JwtSecurityToken(
+            issuer: _jwtIssuer,
+            audience: _jwtAudience,
             claims: new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserID),
