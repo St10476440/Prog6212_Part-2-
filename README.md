@@ -21,12 +21,12 @@ The MVC project communicates with the API over HTTP using the named `RaceDayApi`
 
 ## Configure the API URL
 
-Update `RaceDay.Web/appsettings.json` to match the HTTPS URL printed when the Part 2 API starts:
+Update `RaceDay.Web/appsettings.json` to match the API URL printed by the Part 2 API. The checked-in local default is `http://localhost:5290/`:
 
 ```json
 {
   "Api": {
-    "BaseUrl": "https://localhost:7001/"
+    "BaseUrl": "http://localhost:5290/"
   }
 }
 ```
