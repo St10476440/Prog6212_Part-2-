@@ -2,9 +2,9 @@ name: RaceDay Build
 
 on:
   push:
-    branches: [main, part-3, part-3-improvements]
+    branches: [main, part-3, part-3-add-ons]
   pull_request:
-    branches: [main, part-3]
+    branches: [main, part-3, part-3-add-ons]
   workflow_dispatch:
 
 permissions:
